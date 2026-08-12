@@ -55,14 +55,15 @@ const mapPedido = (p) => ({
 });
 
 /**
- * Crea un nuevo pedido (toma de orden). Ocupa la mesa automáticamente.
- * @param {{ mesaId: number, usuarioId: number, detalles: Array<{productoId:number, cantidad:number, notas?:string}> }} payload
+ * Crea un nuevo pedido (toma de orden). Venta por pedido (no por mesa): mesaId es
+ * opcional y normalmente se omite (modelo food truck / mostrador, sin mesas físicas).
+ * @param {{ mesaId?: number, usuarioId: number, detalles: Array<{productoId:number, cantidad:number, notas?:string}> }} payload
  * @returns {Promise<Object>} pedido creado
  */
 export const createPedido = async ({ mesaId, usuarioId, detalles }) => {
   try {
     const { data } = await api.post('/pedidos', {
-      mesaId,
+      mesaId: mesaId ?? null,
       usuarioId,
       detalles: detalles.map((d) => ({
         productoId: d.productoId,

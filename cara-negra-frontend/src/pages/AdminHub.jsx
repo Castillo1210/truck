@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, UtensilsCrossed, Table2, BarChart3, Users, Package, Percent, Utensils, ChevronRight } from 'lucide-react';
+import { ChevronLeft, UtensilsCrossed, BarChart3, Users, Package, Percent, Utensils, ChevronRight } from 'lucide-react';
 
 const SECCIONES = [
   {
@@ -8,12 +8,6 @@ const SECCIONES = [
     icon: UtensilsCrossed,
     title: 'Carta y menú',
     description: 'Categorías y productos',
-  },
-  {
-    to: '/admin/mesas',
-    icon: Table2,
-    title: 'Mesas',
-    description: 'Crear, editar y desactivar mesas',
   },
   {
     to: '/admin/reportes',
@@ -62,7 +56,7 @@ export default function AdminHub() {
         </motion.button>
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight">Panel de administración</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Gestiona la carta, las mesas y las ventas</p>
+          <p className="text-xs text-gray-500 mt-0.5">Gestiona la carta, los pedidos y las ventas</p>
         </div>
       </div>
 

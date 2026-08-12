@@ -1,15 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Minus, ShoppingBag, UtensilsCrossed, Trash2 } from 'lucide-react';
+import { X, Plus, Minus, ShoppingBag, UtensilsCrossed } from 'lucide-react';
 import { useCart } from '../CartContext';
 import { getCategories, getItemsByCategory } from '../services/menuService';
-import { getActivePedidoForMesa, eliminarDetalle } from '../services/ordersService';
 import toast from 'react-hot-toast';
 
 export default function MenuDrawer({ isOpen, onClose }) {
   const navigate = useNavigate();
-  const { activeTable, addToCart, updateQuantity, cart, total } = useCart();
+  const { addToCart, updateQuantity, cart, total } = useCart();
 
   const [categories, setCategories] = useState([]);
   const [activeCategory, setActiveCategory] = useState(null);
@@ -17,34 +16,14 @@ export default function MenuDrawer({ isOpen, onClose }) {
   const [isLoading, setIsLoading] = useState(false);
   const [addedIds, setAddedIds] = useState(new Set()); // para feedback visual
 
-  // Pedido ya registrado de la mesa (si está Ocupada): se muestra aparte del
-  // carrito de ítems nuevos, porque ya fue enviado a cocina y vive en el
-  // backend, no en el CartContext local.
-  const [pedidoActual, setPedidoActual] = useState(null);
-  const [isLoadingPedido, setIsLoadingPedido] = useState(false);
-  const [removingId, setRemovingId] = useState(null);
-
-  const cargarPedidoActual = useCallback(() => {
-    if (!activeTable || activeTable.status !== 'occupied') {
-      setPedidoActual(null);
-      return;
-    }
-    setIsLoadingPedido(true);
-    getActivePedidoForMesa(activeTable.id)
-      .then(setPedidoActual)
-      .catch(() => setPedidoActual(null))
-      .finally(() => setIsLoadingPedido(false));
-  }, [activeTable]);
-
-  // Cargar categorías y el pedido ya registrado (si la mesa está ocupada) al abrir
+  // Cargar categorías al abrir
   useEffect(() => {
     if (!isOpen) return;
     getCategories().then((cats) => {
       setCategories(cats);
       setActiveCategory(cats[0]?.id ?? null);
     });
-    cargarPedidoActual();
-  }, [isOpen, cargarPedidoActual]);
+  }, [isOpen]);
 
   // Cargar ítems cuando cambia la categoría
   useEffect(() => {
@@ -57,19 +36,6 @@ export default function MenuDrawer({ isOpen, onClose }) {
       .then(setItems)
       .finally(() => setIsLoading(false));
   }, [activeCategory]);
-
-  const handleQuitarDelPedido = async (detalleId) => {
-    setRemovingId(detalleId);
-    try {
-      const actualizado = await eliminarDetalle(pedidoActual.id, detalleId);
-      setPedidoActual(actualizado);
-      toast.success('Ítem quitado del pedido');
-    } catch (err) {
-      toast.error(err.message ?? 'No se pudo quitar el ítem');
-    } finally {
-      setRemovingId(null);
-    }
-  };
 
   const getCartQuantity = (itemId) =>
     cart.find((i) => i.id === itemId)?.quantity ?? 0;
@@ -89,8 +55,6 @@ export default function MenuDrawer({ isOpen, onClose }) {
       duration: 1500,
     });
   };
-
-  if (!activeTable) return null;
 
   return (
     <AnimatePresence>
@@ -130,7 +94,7 @@ export default function MenuDrawer({ isOpen, onClose }) {
                 Tomando pedido
               </p>
               <div className="flex items-center gap-2 mt-0.5">
-                <h2 className="text-xl font-extrabold tracking-tight">Mesa {activeTable?.numeroMesa}</h2>
+                <h2 className="text-xl font-extrabold tracking-tight">Nuevo pedido</h2>
               </div>
             </div>
             <motion.button
@@ -141,43 +105,6 @@ export default function MenuDrawer({ isOpen, onClose }) {
               <X size={18} className="text-gray-400" />
             </motion.button>
           </div>
-
-          {/* Pedido ya registrado de la mesa (Ocupada): lo que ya se envió a cocina */}
-          {isLoadingPedido && (
-            <div className="px-5 py-3 border-b border-gray-800/40">
-              <p className="text-xs text-gray-600">Cargando pedido actual…</p>
-            </div>
-          )}
-          {!isLoadingPedido && pedidoActual && (
-            <div className="px-5 py-3 border-b border-gray-800/40 bg-background/40">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">
-                  Ya en el pedido #{pedidoActual.id}
-                </p>
-                <p className="text-xs font-bold text-primary">S/ {pedidoActual.total.toFixed(2)}</p>
-              </div>
-              <div className="space-y-1.5 max-h-32 overflow-y-auto">
-                {pedidoActual.detalles.map((d) => (
-                  <div key={d.id} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-300 truncate">
-                      {d.cantidad}x {d.productoNombre}
-                    </span>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-gray-500 text-xs">S/ {(d.monto * d.cantidad).toFixed(2)}</span>
-                      <button
-                        onClick={() => handleQuitarDelPedido(d.id)}
-                        disabled={removingId === d.id}
-                        className="p-1 text-gray-600 hover:text-red-500 transition-colors disabled:opacity-40"
-                        title="Quitar del pedido"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Categories */}
           {categories.length > 0 && (

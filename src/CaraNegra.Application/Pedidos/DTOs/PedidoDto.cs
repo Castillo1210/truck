@@ -6,7 +6,7 @@ namespace CaraNegra.Application.Pedidos.DTOs;
 public class PedidoDto
 {
     public int PedidoId { get; set; }
-    public int MesaId { get; set; }
+    public int? MesaId { get; set; }
     public string MesaNumero { get; set; } = string.Empty;
     public int UsuarioId { get; set; }
     public string UsuarioNombre { get; set; } = string.Empty;
@@ -31,7 +31,10 @@ public class DescuentoAplicadoDto
 
 public class CreatePedidoDto
 {
-    public int MesaId { get; set; }
+    // Opcional: en el modelo de food truck / mostrador no hay mesas físicas, el pedido se
+    // identifica solo por su propio número. Se mantiene el campo por si algún local sí usa
+    // mesas y lo envía.
+    public int? MesaId { get; set; }
     public int UsuarioId { get; set; }
     public List<CreatePedidoDetalleDto> Detalles { get; set; } = new();
 }
@@ -45,7 +48,7 @@ public class CreatePedidoDetalleDto
 
 public class UpdatePedidoDto
 {
-    public int MesaId { get; set; }
+    public int? MesaId { get; set; }
     public int UsuarioId { get; set; }
 }
 
@@ -69,4 +72,4 @@ public class PedidoDetalleDto
     public decimal Monto { get; set; }
     public string? Notas { get; set; }
     public EstadoDetallePedido EstadoDetallePedido { get; set; }
-}
+}

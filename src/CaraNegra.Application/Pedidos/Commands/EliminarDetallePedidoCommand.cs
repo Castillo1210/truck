@@ -62,7 +62,7 @@ public class EliminarDetallePedidoCommandHandler : IRequestHandler<EliminarDetal
         await _hub.NotificarPedidoActualizado(new PedidoActualizadoEvent
         {
             PedidoId = pedido.PedidoId,
-            MesaNumero = pedido.Mesa.NumeroMesa,
+            MesaNumero = pedido.Mesa?.NumeroMesa ?? string.Empty,
             SubTotal = pedido.SubTotal,
             Total = pedido.Total
         });

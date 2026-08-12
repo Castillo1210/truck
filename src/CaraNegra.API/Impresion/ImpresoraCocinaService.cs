@@ -74,11 +74,22 @@ public class ImpresoraCocinaService : IImpresoraCocinaService
         // ESC @ (0x1B 0x40): comando ESC/POS estándar para inicializar/resetear la impresora.
         sb.Append('\u001B').Append('@');
 
-        AgregarLinea(sb, comanda.EsAdicional ? "*** PEDIDO ADICIONAL ***" : "CARA NEGRA - COCINA");
+        AgregarLinea(sb, comanda.EsAdicional ? "*** PEDIDO ADICIONAL ***" : "COCINA");
         AgregarLinea(sb, LineaSeparadora);
-        AgregarLinea(sb, $"Mesa: {comanda.MesaNumero}          Pedido #{comanda.PedidoId}");
+        // Venta por pedido (no por mesa): el pedido es el identificador principal. Si de
+        // todos modos llega un MesaNumero (compatibilidad hacia atrás), se agrega como dato
+        // extra, pero ya no es obligatorio ni el eje del ticket.
+        AgregarLinea(sb, $"Pedido #{comanda.PedidoId}");
+        if (!string.IsNullOrWhiteSpace(comanda.MesaNumero))
+        {
+            AgregarLinea(sb, $"Mesa: {comanda.MesaNumero}");
+        }
         AgregarLinea(sb, $"Mozo: {comanda.MozoNombre}");
-        AgregarLinea(sb, $"Hora: {comanda.CreadoEn:dd/MM/yyyy HH:mm}");
+        // CreadoEn se guarda en UTC; se convierte a hora local de Lima (UTC-5) para que la
+        // hora impresa en la comanda coincida con la hora real del local (antes se imprimía
+        // la hora UTC directamente, adelantada 5 horas respecto a Lima).
+        var horaLima = comanda.CreadoEn.AddHours(-5);
+        AgregarLinea(sb, $"Hora: {horaLima:dd/MM/yyyy HH:mm}");
         AgregarLinea(sb, LineaSeparadora);
 
         foreach (var item in comanda.Items)

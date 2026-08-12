@@ -25,16 +25,22 @@ public class CreatePedidoCommandHandler : IRequestHandler<CreatePedidoCommand, P
 
     public async Task<PedidoDto> Handle(CreatePedidoCommand request, CancellationToken cancellationToken)
     {
-        // Verificar que la mesa está disponible
-        var mesa = await _context.Mesas
-            .FirstOrDefaultAsync(m => m.MesaId == request.Dto.MesaId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Mesa {request.Dto.MesaId} no encontrada");
-
-        // Una mesa Reservada también puede recibir un pedido nuevo (el cliente de la
-        // reserva se sienta y el mozo toma la orden); solo Ocupada/Mantenimiento bloquean.
-        if (mesa.Estado != EstadoMesa.Disponible && mesa.Estado != EstadoMesa.Reservada)
+        // Venta por pedido (no por mesa): la mesa es opcional. Si se envía (locales que sí
+        // usan mesas), se valida y se ocupa como antes; si no se envía (food truck /
+        // mostrador), el pedido se crea sin mesa asociada.
+        Mesa? mesa = null;
+        if (request.Dto.MesaId.HasValue)
         {
-            throw new InvalidOperationException($"La mesa {mesa.NumeroMesa} no está disponible (estado actual: {mesa.Estado})");
+            mesa = await _context.Mesas
+                .FirstOrDefaultAsync(m => m.MesaId == request.Dto.MesaId.Value, cancellationToken)
+                ?? throw new KeyNotFoundException($"Mesa {request.Dto.MesaId} no encontrada");
+
+            // Una mesa Reservada también puede recibir un pedido nuevo (el cliente de la
+            // reserva se sienta y el mozo toma la orden); solo Ocupada/Mantenimiento bloquean.
+            if (mesa.Estado != EstadoMesa.Disponible && mesa.Estado != EstadoMesa.Reservada)
+            {
+                throw new InvalidOperationException($"La mesa {mesa.NumeroMesa} no está disponible (estado actual: {mesa.Estado})");
+            }
         }
 
         // Verificar usuario
@@ -75,7 +81,7 @@ public class CreatePedidoCommandHandler : IRequestHandler<CreatePedidoCommand, P
         // Crear pedido
         var pedido = new Pedido
         {
-            MesaId = mesa.MesaId,
+            MesaId = mesa?.MesaId,
             UsuarioId = usuario.UsuarioId,
             SubTotal = subTotal,
             Total = total,
@@ -83,8 +89,11 @@ public class CreatePedidoCommandHandler : IRequestHandler<CreatePedidoCommand, P
             DetallesPedidos = detalles
         };
 
-        // Cambiar estado de mesa a Ocupada
-        mesa.Estado = EstadoMesa.Ocupada;
+        // Cambiar estado de mesa a Ocupada (solo si el pedido tiene mesa asociada)
+        if (mesa != null)
+        {
+            mesa.Estado = EstadoMesa.Ocupada;
+        }
 
         _context.Pedidos.Add(pedido);
         await _context.SaveChangesAsync(cancellationToken);
@@ -171,4 +180,4 @@ public class CreatePedidoCommandHandler : IRequestHandler<CreatePedidoCommand, P
             }).ToList()
         };
     }
-}
+}

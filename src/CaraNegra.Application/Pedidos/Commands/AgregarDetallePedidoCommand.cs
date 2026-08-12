@@ -94,7 +94,7 @@ public class AgregarDetallePedidoCommandHandler : IRequestHandler<AgregarDetalle
         await _hub.NotificarPedidoActualizado(new PedidoActualizadoEvent
         {
             PedidoId = pedidoActualizado.PedidoId,
-            MesaNumero = pedidoActualizado.Mesa.NumeroMesa,
+            MesaNumero = pedidoActualizado.Mesa?.NumeroMesa ?? string.Empty,
             SubTotal = pedidoActualizado.SubTotal,
             Total = pedidoActualizado.Total
         });

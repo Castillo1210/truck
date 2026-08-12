@@ -16,18 +16,6 @@ export function CartProvider({ children }) {
     return [];
   });
 
-  const [activeTable, setActiveTable] = useState(() => {
-    try {
-      const savedTable = localStorage.getItem('caraNegraTable');
-      if (savedTable) {
-        return JSON.parse(savedTable);
-      }
-    } catch (e) {
-      console.error('Error parsing table from localStorage:', e);
-    }
-    return null;
-  });
-
   const [cartOpen, setCartOpen] = useState(false);
 
   useEffect(() => {
@@ -37,14 +25,6 @@ export function CartProvider({ children }) {
       console.error('Error saving cart to localStorage:', e);
     }
   }, [cart]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('caraNegraTable', JSON.stringify(activeTable));
-    } catch (e) {
-      console.error('Error saving table to localStorage:', e);
-    }
-  }, [activeTable]);
 
   // Sincronización entre pestañas o contextos desincronizados
   useEffect(() => {
@@ -100,8 +80,8 @@ export function CartProvider({ children }) {
   const closeCart = useCallback(() => setCartOpen(false), []);
 
   return (
-    <CartContext.Provider value={{ 
-      cart, activeTable, setActiveTable, 
+    <CartContext.Provider value={{
+      cart,
       addToCart, removeFromCart, updateQuantity, clearCart, total,
       cartOpen, openCart, closeCart
     }}>
@@ -110,4 +90,4 @@ export function CartProvider({ children }) {
   );
 }
 
-export const useCart = () => useContext(CartContext);
+export const useCart = () => useContext(CartContext);

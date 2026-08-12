@@ -80,14 +80,17 @@ public class UpdatePedidoEstadoCommandHandler : IRequestHandler<UpdatePedidoEsta
 
         pedido.EstadoPedido = estadoNuevo;
 
+        // Liberar mesa solo aplica a pedidos que tienen una mesa asociada (locales que sí
+        // usan mesas); en el modelo de food truck / mostrador el pedido no tiene mesa y este
+        // bloque simplemente no se ejecuta.
         bool mesaLiberada = false;
-        if (estadoNuevo == EstadoPedido.Cancelado)
+        if (estadoNuevo == EstadoPedido.Cancelado && pedido.MesaId.HasValue)
         {
             var otrosPedidos = await _context.Pedidos
                 .AnyAsync(p => p.MesaId == pedido.MesaId && p.PedidoId != pedido.PedidoId
                     && p.EstadoPedido != EstadoPedido.Cancelado && p.EstadoPedido != EstadoPedido.Entregado, cancellationToken);
 
-            if (!otrosPedidos && pedido.Mesa.Estado != EstadoMesa.Disponible)
+            if (!otrosPedidos && pedido.Mesa != null && pedido.Mesa.Estado != EstadoMesa.Disponible)
             {
                 pedido.Mesa.Estado = EstadoMesa.Disponible;
                 mesaLiberada = true;
@@ -99,13 +102,13 @@ public class UpdatePedidoEstadoCommandHandler : IRequestHandler<UpdatePedidoEsta
         await _hub.NotificarPedidoEstadoCambiado(new PedidoEstadoCambiadoEvent
         {
             PedidoId = pedido.PedidoId,
-            MesaNumero = pedido.Mesa.NumeroMesa,
+            MesaNumero = pedido.Mesa?.NumeroMesa ?? string.Empty,
             EstadoAnterior = estadoAnterior.ToString(),
             EstadoNuevo = estadoNuevo.ToString(),
             ActualizadoEn = DateTime.UtcNow
         });
 
-        if (mesaLiberada)
+        if (mesaLiberada && pedido.Mesa != null)
         {
             await _hub.NotificarMesaEstadoCambiado(new MesaEstadoCambiadoEvent
             {

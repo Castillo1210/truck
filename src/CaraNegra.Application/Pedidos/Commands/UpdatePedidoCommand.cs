@@ -36,36 +36,43 @@ public class UpdatePedidoCommandHandler : IRequestHandler<UpdatePedidoCommand, P
             throw new InvalidOperationException("Solo se puede actualizar la mesa/usuario en pedidos Pendientes");
         }
 
-        var mesa = await _context.Mesas
-            .FirstOrDefaultAsync(m => m.MesaId == request.Dto.MesaId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Mesa {request.Dto.MesaId} no encontrada");
-
         var usuario = await _context.Usuarios
             .FirstOrDefaultAsync(u => u.UsuarioId == request.Dto.UsuarioId, cancellationToken)
             ?? throw new KeyNotFoundException($"Usuario {request.Dto.UsuarioId} no encontrado");
 
-        // Si cambia la mesa, liberar la anterior y ocupar la nueva
+        // Venta por pedido (no por mesa): MesaId es opcional. Solo se toca la ocupación de
+        // mesas cuando el pedido efectivamente tiene (o pasa a tener) una mesa asociada.
         if (pedido.MesaId != request.Dto.MesaId)
         {
-            var mesaAnterior = await _context.Mesas.FindAsync(new object[] { pedido.MesaId }, cancellationToken);
-            if (mesaAnterior != null)
+            if (pedido.MesaId.HasValue)
             {
-                // Verificar si hay otros pedidos en la mesa anterior
-                var otrosPedidos = await _context.Pedidos
-                    .AnyAsync(p => p.MesaId == pedido.MesaId && p.PedidoId != request.PedidoId 
-                        && p.EstadoPedido != EstadoPedido.Cancelado && p.EstadoPedido != EstadoPedido.Entregado, cancellationToken);
-                
-                if (!otrosPedidos)
+                var mesaAnterior = await _context.Mesas.FindAsync(new object[] { pedido.MesaId.Value }, cancellationToken);
+                if (mesaAnterior != null)
                 {
-                    mesaAnterior.Estado = EstadoMesa.Disponible;
+                    // Verificar si hay otros pedidos en la mesa anterior
+                    var otrosPedidos = await _context.Pedidos
+                        .AnyAsync(p => p.MesaId == pedido.MesaId && p.PedidoId != request.PedidoId
+                            && p.EstadoPedido != EstadoPedido.Cancelado && p.EstadoPedido != EstadoPedido.Entregado, cancellationToken);
+
+                    if (!otrosPedidos)
+                    {
+                        mesaAnterior.Estado = EstadoMesa.Disponible;
+                    }
                 }
             }
 
-            if (mesa.Estado != EstadoMesa.Disponible)
+            if (request.Dto.MesaId.HasValue)
             {
-                throw new InvalidOperationException($"La mesa {mesa.NumeroMesa} no está disponible");
+                var mesaNueva = await _context.Mesas
+                    .FirstOrDefaultAsync(m => m.MesaId == request.Dto.MesaId.Value, cancellationToken)
+                    ?? throw new KeyNotFoundException($"Mesa {request.Dto.MesaId} no encontrada");
+
+                if (mesaNueva.Estado != EstadoMesa.Disponible)
+                {
+                    throw new InvalidOperationException($"La mesa {mesaNueva.NumeroMesa} no está disponible");
+                }
+                mesaNueva.Estado = EstadoMesa.Ocupada;
             }
-            mesa.Estado = EstadoMesa.Ocupada;
         }
 
         pedido.MesaId = request.Dto.MesaId;
@@ -143,4 +150,4 @@ public class UpdatePedidoCommandHandler : IRequestHandler<UpdatePedidoCommand, P
             }).ToList()
         };
     }
-}
+}

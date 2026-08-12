@@ -16,9 +16,11 @@ public class CreatePedidoDtoValidator : AbstractValidator<CreatePedidoDto>
 
         // MustAsync no es compatible con el pipeline de validación automática síncrono de
         // ASP.NET Core — las reglas de abajo usan Must + .Any síncrono en vez de MustAsync/.AnyAsync.
+        // Venta por pedido (no por mesa): MesaId es opcional. Si se envía (locales que sí
+        // usan mesas), igual debe ser una mesa válida y disponible.
         RuleFor(x => x.MesaId)
-            .GreaterThan(0).WithMessage("La mesa es requerida")
-            .Must(BeValidMesa).WithMessage("La mesa no existe o no está disponible");
+            .Must(BeValidMesa).WithMessage("La mesa no existe o no está disponible")
+            .When(x => x.MesaId.HasValue);
 
         RuleFor(x => x.UsuarioId)
             .GreaterThan(0).WithMessage("El usuario es requerido")
@@ -40,8 +42,9 @@ public class CreatePedidoDtoValidator : AbstractValidator<CreatePedidoDto>
         });
     }
 
-    private bool BeValidMesa(int mesaId)
+    private bool BeValidMesa(int? mesaIdNullable)
     {
+        var mesaId = mesaIdNullable!.Value;
         // Una mesa Reservada también puede recibir un pedido nuevo (el cliente de la
         // reserva se sienta y el mozo toma la orden); solo Ocupada/Mantenimiento bloquean.
         return _context.Mesas.Any(m => m.MesaId == mesaId
@@ -57,4 +60,4 @@ public class CreatePedidoDtoValidator : AbstractValidator<CreatePedidoDto>
     {
         return _context.Productos.Any(p => p.ProductoId == productoId && p.EstaDisponible);
     }
-}
+}

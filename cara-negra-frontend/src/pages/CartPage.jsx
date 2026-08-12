@@ -2,19 +2,21 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../CartContext';
-import { createPedido, agregarDetalle, getActivePedidoForMesa } from '../services/ordersService';
+import { createPedido } from '../services/ordersService';
 import { getCremas } from '../services/cremasService';
 import { useAuth } from '../context/AuthContext';
-import { ChevronLeft, Trash2, Plus, Minus, FileText, Send, ShoppingBag, UtensilsCrossed } from 'lucide-react';
+import { ChevronLeft, Trash2, Plus, Minus, FileText, Send, ShoppingBag, UtensilsCrossed, ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const { cart, activeTable, updateQuantity, removeFromCart, total, clearCart } = useCart();
+  const { cart, updateQuantity, removeFromCart, total, clearCart } = useCart();
   const { user } = useAuth();
   const [cremasDisponibles, setCremasDisponibles] = useState([]);
-  const [cremasSeleccionadas, setCremasSeleccionadas] = useState(new Set());
-  const [note, setNote] = useState('');
+  // Nota por detalle de pedido: cada ítem del carrito tiene sus propias cremas/nota, en vez
+  // de una única nota general adjuntada al primer ítem como compromiso. Se indexa por el id
+  // del producto (item.id), que es único dentro del carrito.
+  const [itemExtras, setItemExtras] = useState({});
   const [isSending, setIsSending] = useState(false);
 
   // Cremas/toppings del catálogo administrable (Fase 8): chips de un solo tap para no
@@ -27,71 +29,69 @@ export default function CartPage() {
   const itemCount = cart.reduce((acc, i) => acc + i.quantity, 0);
   const itemLabel = itemCount === 1 ? '1 artículo' : `${itemCount} artículos`;
 
-  const toggleCrema = (crema) => {
-    setCremasSeleccionadas((prev) => {
-      const next = new Set(prev);
-      if (next.has(crema)) next.delete(crema);
-      else next.add(crema);
-      return next;
-    });
-  };
+  const getExtra = (itemId) => itemExtras[itemId] ?? { cremas: new Set(), nota: '', expanded: false };
 
-  // Combina las cremas elegidas por tap con lo que se haya escrito a mano en el campo libre.
-  const notaCompuesta = () => {
-    const partes = [...cremasSeleccionadas];
-    if (note.trim()) partes.push(note.trim());
-    return partes.join(', ');
-  };
-
-  const buildDetalles = () => {
-    const nota = notaCompuesta();
-    return cart.map((item, idx) => ({
-      productoId: item.id,
-      cantidad: item.quantity,
-      // El backend solo soporta notas por línea (no una nota global del pedido);
-      // como compromiso pragmático, la nota general se adjunta a la primera línea.
-      notas: idx === 0 && nota ? nota : undefined,
+  const toggleExpanded = (itemId) => {
+    setItemExtras((prev) => ({
+      ...prev,
+      [itemId]: { ...getExtra(itemId), expanded: !getExtra(itemId).expanded },
     }));
   };
 
+  const toggleCrema = (itemId, crema) => {
+    setItemExtras((prev) => {
+      const current = getExtra(itemId);
+      const nextCremas = new Set(current.cremas);
+      if (nextCremas.has(crema)) nextCremas.delete(crema);
+      else nextCremas.add(crema);
+      return { ...prev, [itemId]: { ...current, cremas: nextCremas } };
+    });
+  };
+
+  const setNota = (itemId, nota) => {
+    setItemExtras((prev) => ({ ...prev, [itemId]: { ...getExtra(itemId), nota } }));
+  };
+
+  // Combina las cremas elegidas por tap con lo que se haya escrito a mano, para este ítem.
+  const notaCompuestaDe = (itemId) => {
+    const extra = getExtra(itemId);
+    const partes = [...extra.cremas];
+    if (extra.nota.trim()) partes.push(extra.nota.trim());
+    return partes.join(', ');
+  };
+
+  const resumenNotaDe = (itemId) => {
+    const nota = notaCompuestaDe(itemId);
+    return nota || null;
+  };
+
+  const buildDetalles = () =>
+    cart.map((item) => ({
+      productoId: item.id,
+      cantidad: item.quantity,
+      notas: resumenNotaDe(item.id) || undefined,
+    }));
+
   const handleSendOrder = async () => {
-    if (!activeTable) {
-      toast.error('No hay una mesa seleccionada');
-      return;
-    }
     if (!user?.usuarioId) {
-      toast.error('No se pudo identificar al mozo. Vuelve a iniciar sesión.');
+      toast.error('No se pudo identificar al usuario. Vuelve a iniciar sesión.');
       return;
     }
 
     setIsSending(true);
     try {
       const detalles = buildDetalles();
-      let pedido;
-
-      if (activeTable.status === 'occupied') {
-        // La mesa ya tiene un pedido activo: se agregan los ítems a ese pedido
-        // en vez de crear uno nuevo (una mesa no puede tener dos pedidos abiertos).
-        const activo = await getActivePedidoForMesa(activeTable.id);
-        if (!activo) {
-          throw new Error('La mesa figura ocupada pero no se encontró su pedido activo. Actualiza la pantalla e intenta de nuevo.');
-        }
-        for (const detalle of detalles) {
-          pedido = await agregarDetalle(activo.id, detalle);
-        }
-      } else {
-        pedido = await createPedido({
-          mesaId: activeTable.id,
-          usuarioId: user.usuarioId,
-          detalles,
-        });
-      }
+      // Venta por pedido (no por mesa): cada envío crea un pedido nuevo, identificado
+      // solo por su propio número, sin asociarlo a ninguna mesa.
+      const pedido = await createPedido({
+        usuarioId: user.usuarioId,
+        detalles,
+      });
 
       clearCart();
-      setCremasSeleccionadas(new Set());
-      setNote('');
+      setItemExtras({});
       navigate('/success', {
-        state: { pedidoId: pedido.id, mesaNumero: pedido.mesaNumero },
+        state: { pedidoId: pedido.id },
       });
     } catch (err) {
       toast.error(err.message ?? 'Error al enviar el pedido. Intenta de nuevo.');
@@ -112,7 +112,7 @@ export default function CartPage() {
         </div>
         <h2 className="text-xl font-extrabold text-white mb-2">Carrito vacío</h2>
         <p className="text-gray-500 text-sm mb-8 text-center">
-          Aún no has añadido productos a la mesa.
+          Aún no has añadido productos al pedido.
         </p>
         <motion.button
           whileTap={{ scale: 0.96 }}
@@ -138,9 +138,7 @@ export default function CartPage() {
             <ChevronLeft size={22} />
           </motion.button>
           <div>
-            <h1 className="text-lg font-extrabold tracking-tight">
-              Pedido · Mesa {activeTable?.numeroMesa}
-            </h1>
+            <h1 className="text-lg font-extrabold tracking-tight">Tu pedido</h1>
             <p className="text-xs text-gray-500">{itemLabel} seleccionados</p>
           </div>
         </div>
@@ -149,117 +147,144 @@ export default function CartPage() {
       {/* ── Items ───────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 pb-4">
         <AnimatePresence>
-          {cart.map((item) => (
-            <motion.div
-              key={item.id}
-              layout
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, x: -40, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              className="bg-card rounded-2xl p-4 flex gap-3 items-center border border-gray-800/40"
-            >
-              <div className="w-16 h-16 rounded-xl bg-background flex items-center justify-center flex-shrink-0">
-                <UtensilsCrossed size={20} className="text-gray-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-sm leading-tight truncate">{item.name}</h3>
-                <p className="text-primary text-xs font-bold mt-0.5">
-                  S/ {item.price.toFixed(2)} / ud.
-                </p>
-                {/* Counter */}
-                <div className="flex items-center gap-2 mt-2.5">
-                  <div className="flex items-center gap-1.5 bg-background rounded-full px-1.5 py-1 border border-gray-700/40">
+          {cart.map((item) => {
+            const extra = getExtra(item.id);
+            const resumenNota = resumenNotaDe(item.id);
+            return (
+              <motion.div
+                key={item.id}
+                layout
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, x: -40, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className="bg-card rounded-2xl p-4 border border-gray-800/40"
+              >
+                <div className="flex gap-3 items-center">
+                  <div className="w-16 h-16 rounded-xl bg-background flex items-center justify-center flex-shrink-0">
+                    <UtensilsCrossed size={20} className="text-gray-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-sm leading-tight truncate">{item.name}</h3>
+                    <p className="text-primary text-xs font-bold mt-0.5">
+                      S/ {item.price.toFixed(2)} / ud.
+                    </p>
+                    {/* Counter */}
+                    <div className="flex items-center gap-2 mt-2.5">
+                      <div className="flex items-center gap-1.5 bg-background rounded-full px-1.5 py-1 border border-gray-700/40">
+                        <motion.button
+                          whileTap={{ scale: 0.8 }}
+                          onClick={() => updateQuantity(item.id, -1)}
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+                        >
+                          <Minus size={13} />
+                        </motion.button>
+                        <motion.span
+                          key={item.quantity}
+                          initial={{ scale: 1.3 }}
+                          animate={{ scale: 1 }}
+                          className="w-5 text-center text-sm font-extrabold text-white"
+                        >
+                          {item.quantity}
+                        </motion.span>
+                        <motion.button
+                          whileTap={{ scale: 0.8 }}
+                          onClick={() => updateQuantity(item.id, 1)}
+                          className="w-7 h-7 bg-primary rounded-full flex items-center justify-center hover:bg-primaryHover transition-colors"
+                        >
+                          <Plus size={13} className="text-white" />
+                        </motion.button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-end gap-3 flex-shrink-0">
+                    <p className="font-extrabold text-base">
+                      S/ {(item.price * item.quantity).toFixed(2)}
+                    </p>
                     <motion.button
-                      whileTap={{ scale: 0.8 }}
-                      onClick={() => updateQuantity(item.id, -1)}
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+                      whileTap={{ scale: 0.85 }}
+                      onClick={() => {
+                        removeFromCart(item.id);
+                        toast(`${item.name} eliminado`, { icon: '🗑️', duration: 1500 });
+                      }}
+                      className="p-1.5 hover:bg-red-500/20 rounded-full text-gray-600 hover:text-red-500 transition-colors"
                     >
-                      <Minus size={13} />
-                    </motion.button>
-                    <motion.span
-                      key={item.quantity}
-                      initial={{ scale: 1.3 }}
-                      animate={{ scale: 1 }}
-                      className="w-5 text-center text-sm font-extrabold text-white"
-                    >
-                      {item.quantity}
-                    </motion.span>
-                    <motion.button
-                      whileTap={{ scale: 0.8 }}
-                      onClick={() => updateQuantity(item.id, 1)}
-                      className="w-7 h-7 bg-primary rounded-full flex items-center justify-center hover:bg-primaryHover transition-colors"
-                    >
-                      <Plus size={13} className="text-white" />
+                      <Trash2 size={16} />
                     </motion.button>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex flex-col items-end gap-3 flex-shrink-0">
-                <p className="font-extrabold text-base">
-                  S/ {(item.price * item.quantity).toFixed(2)}
-                </p>
-                <motion.button
-                  whileTap={{ scale: 0.85 }}
-                  onClick={() => {
-                    removeFromCart(item.id);
-                    toast(`${item.name} eliminado`, { icon: '🗑️', duration: 1500 });
-                  }}
-                  className="p-1.5 hover:bg-red-500/20 rounded-full text-gray-600 hover:text-red-500 transition-colors"
+                {/* Cremas / nota de este ítem (Nota por detalle de pedido) */}
+                <button
+                  type="button"
+                  onClick={() => toggleExpanded(item.id)}
+                  className="w-full flex items-center justify-between mt-3 pt-3 border-t border-gray-800/40 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
                 >
-                  <Trash2 size={16} />
-                </motion.button>
-              </div>
-            </motion.div>
-          ))}
+                  <span className="flex items-center gap-1.5 truncate">
+                    <FileText size={13} className="flex-shrink-0" />
+                    {resumenNota ? (
+                      <span className="truncate text-gray-300">{resumenNota}</span>
+                    ) : (
+                      'Cremas / observaciones (opcional)'
+                    )}
+                  </span>
+                  {extra.expanded ? <ChevronUp size={14} className="flex-shrink-0" /> : <ChevronDown size={14} className="flex-shrink-0" />}
+                </button>
+
+                <AnimatePresence>
+                  {extra.expanded && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="pt-3 space-y-2.5">
+                        {cremasDisponibles.length > 0 && (
+                          <div className="flex gap-2 flex-wrap">
+                            {cremasDisponibles.map((crema) => {
+                              const activa = extra.cremas.has(crema);
+                              return (
+                                <motion.button
+                                  key={crema}
+                                  type="button"
+                                  whileTap={{ scale: 0.93 }}
+                                  onClick={() => toggleCrema(item.id, crema)}
+                                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                                    activa
+                                      ? 'bg-primary text-white border-primary shadow-glow-orange'
+                                      : 'bg-background text-gray-400 border-gray-700/50 hover:border-gray-500'
+                                  }`}
+                                >
+                                  {crema}
+                                </motion.button>
+                              );
+                            })}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-3 bg-background p-3 rounded-2xl border border-gray-700/30">
+                          <FileText size={15} className="text-gray-500 flex-shrink-0" />
+                          <input
+                            type="text"
+                            value={extra.nota}
+                            onChange={(e) => setNota(item.id, e.target.value)}
+                            placeholder="Otra indicación para este ítem (opcional)…"
+                            className="bg-transparent w-full text-sm focus:outline-none placeholder-gray-600 text-white"
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </div>
 
       {/* ── Footer ──────────────────────────────────────── */}
       <div className="px-4 pb-8 pt-3 border-t border-gray-800/60 bg-card/80 backdrop-blur-md space-y-4">
-        {/* Cremas rápidas */}
-        <div>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-            Cremas / observaciones
-          </p>
-          <div className="flex gap-2 flex-wrap">
-            {cremasDisponibles.length === 0 && (
-              <p className="text-xs text-gray-600">No hay cremas configuradas. Puedes escribir una indicación abajo.</p>
-            )}
-            {cremasDisponibles.map((crema) => {
-              const activa = cremasSeleccionadas.has(crema);
-              return (
-                <motion.button
-                  key={crema}
-                  type="button"
-                  whileTap={{ scale: 0.93 }}
-                  onClick={() => toggleCrema(crema)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                    activa
-                      ? 'bg-primary text-white border-primary shadow-glow-orange'
-                      : 'bg-background text-gray-400 border-gray-700/50 hover:border-gray-500'
-                  }`}
-                >
-                  {crema}
-                </motion.button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Nota al cocinero (para lo que no cubren las chips de arriba) */}
-        <div className="flex items-center gap-3 bg-background p-3.5 rounded-2xl border border-gray-700/30">
-          <FileText size={17} className="text-gray-500 flex-shrink-0" />
-          <input
-            type="text"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Otra indicación (opcional)…"
-            className="bg-transparent w-full text-sm focus:outline-none placeholder-gray-600 text-white"
-          />
-        </div>
-
         {/* Total */}
         <div className="flex justify-between items-center">
           <span className="text-gray-400 text-base">Total estimado</span>

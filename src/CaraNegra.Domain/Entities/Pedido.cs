@@ -11,13 +11,17 @@ public class Pedido : BaseEntity
     public EstadoPedido EstadoPedido { get; set; } = EstadoPedido.Pendiente;
 
     // Claves foraneas
-    public int MesaId { get; set; }
+    // Venta por pedido (no por mesa): en el modelo de food truck / mostrador no existen
+    // mesas físicas, así que un pedido puede no tener mesa asociada. Se conserva la
+    // relación opcional en vez de eliminarla por completo para no perder compatibilidad
+    // con locales que sí usan mesas.
+    public int? MesaId { get; set; }
     public int UsuarioId { get; set; }
 
     // Propiedades de navegacion
-    public Mesa Mesa { get; set; } = null!;
+    public Mesa? Mesa { get; set; }
     public Usuario Usuario { get; set; } = null!;
     public ICollection<DetallePedido> DetallesPedidos { get; set; } = new List<DetallePedido>();
     public ICollection<Pago> Pagos { get; set; } = new List<Pago>();
     public ICollection<DetalleDescuento> DetallesDescuentos { get; set; } = new List<DetalleDescuento>();
-}
+}

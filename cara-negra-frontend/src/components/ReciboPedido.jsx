@@ -54,7 +54,13 @@ export default function ReciboPedido({ pedido, pagos, onClose }) {
             <span>Pedido #{pedido.id}</span>
             <span>{fecha}</span>
           </div>
-          <div className="text-xs text-gray-600 mb-3">Mesa {pedido.mesaNumero}</div>
+          {/* Venta por pedido (no por mesa): se identifica quién atendió en vez de una mesa. */}
+          {pedido.usuarioNombre && (
+            <div className="text-xs text-gray-600 mb-1">Atendido por: {pedido.usuarioNombre}</div>
+          )}
+          {pedido.mesaNumero && (
+            <div className="text-xs text-gray-600 mb-3">Mesa {pedido.mesaNumero}</div>
+          )}
 
           <div className="border-t border-dashed border-gray-300 my-2" />
 

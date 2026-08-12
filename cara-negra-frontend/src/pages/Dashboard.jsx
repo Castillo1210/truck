@@ -1,49 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, Receipt, UtensilsCrossed } from 'lucide-react';
+import { ShoppingCart, Receipt, UtensilsCrossed, PlusCircle, ClipboardList } from 'lucide-react';
 import { useCart } from '../CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useClock } from '../hooks/useClock';
-import { getTables } from '../services/tablesService';
+import { getPedidos } from '../services/ordersService';
 import { connectPedidosHub, onHubEvent } from '../services/signalrService';
 import UserSettingsModal from '../components/UserSettingsModal';
 import MenuDrawer from '../components/MenuDrawer';
-
-const STATUS_STYLES = {
-  free: {
-    dot: 'bg-accentGreen',
-    bg: 'bg-emerald-950/40',
-    border: 'border-emerald-900/40',
-    shadow: 'shadow-glow-green',
-    text: 'text-accentGreen',
-    label: 'Libre',
-  },
-  occupied: {
-    dot: 'bg-primary',
-    bg: 'bg-orange-950/40',
-    border: 'border-orange-900/40',
-    shadow: 'shadow-glow-orange',
-    text: 'text-primary',
-    label: 'Ocupada',
-  },
-  reserved: {
-    dot: 'bg-accentYellow',
-    bg: 'bg-yellow-950/40',
-    border: 'border-yellow-900/40',
-    shadow: 'shadow-glow-yellow',
-    text: 'text-accentYellow',
-    label: 'Reservada',
-  },
-  maintenance: {
-    dot: 'bg-gray-500',
-    bg: 'bg-gray-800/40',
-    border: 'border-gray-700/40',
-    shadow: '',
-    text: 'text-gray-400',
-    label: 'Mantenimiento',
-  },
-};
 
 const containerVariants = {
   hidden: {},
@@ -55,67 +20,61 @@ const cardVariants = {
   show: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 260, damping: 20 } },
 };
 
+// Venta por pedido (no por mesa, modelo food truck / mostrador): no hay mapa de mesas,
+// el dashboard se centra en "Nuevo pedido" y en un vistazo rápido de los pedidos activos.
 export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setActiveTable, cart } = useCart();
+  const { cart } = useCart();
   const { user } = useAuth();
   const { time } = useClock();
 
-  const [tables, setTables] = useState([]);
+  const [pedidosActivos, setPedidosActivos] = useState([]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const loadTables = useCallback(() => {
-    getTables().then(setTables);
+  const loadPedidosActivos = useCallback(() => {
+    getPedidos({ pageSize: 50 })
+      .then((res) => {
+        const activos = res.items.filter((p) => p.estado !== 'Cancelado' && p.estado !== 'Entregado');
+        setPedidosActivos(activos);
+      })
+      .catch(() => {});
   }, []);
 
-  // Cargar mesas al montar
   useEffect(() => {
-    loadTables();
-  }, [loadTables]);
+    loadPedidosActivos();
+  }, [loadPedidosActivos]);
 
-  // Tiempo real: refrescar el mapa de mesas cuando cambia el estado de una mesa
-  // o cuando se crea/actualiza un pedido (libera u ocupa mesas indirectamente).
+  // Tiempo real: refrescar la lista de pedidos activos cuando cambian.
   useEffect(() => {
     let unsubscribers = [];
 
     connectPedidosHub().then((connection) => {
       if (!connection) return;
       unsubscribers = [
-        onHubEvent('MesaEstadoCambiado', loadTables),
-        onHubEvent('NuevoPedido', loadTables),
-        onHubEvent('PedidoEstadoCambiado', loadTables),
-        onHubEvent('PagoRecibido', loadTables),
-        onHubEvent('PagoAnulado', loadTables),
+        onHubEvent('NuevoPedido', loadPedidosActivos),
+        onHubEvent('PedidoEstadoCambiado', loadPedidosActivos),
+        onHubEvent('PedidoActualizado', loadPedidosActivos),
+        onHubEvent('PagoRecibido', loadPedidosActivos),
+        onHubEvent('PagoAnulado', loadPedidosActivos),
       ];
     });
 
     return () => {
       unsubscribers.forEach((unsub) => unsub());
     };
-  }, [loadTables]);
+  }, [loadPedidosActivos]);
 
   // Cerrar el drawer cuando se navega de vuelta al dashboard
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location.key]);
 
-  const handleTableClick = (table) => {
-    if (table.status === 'maintenance') return;
-    setActiveTable(table);
-    setIsMenuOpen(true);
-  };
-
   const firstName = user?.nombreCompleto?.split(' ')[0] ?? 'Camarero';
   const initial = firstName[0]?.toUpperCase() ?? 'C';
   const puedeCobrar = user?.rol === 'CAJERO' || user?.rol === 'ADMIN';
   const esAdmin = user?.rol === 'ADMIN';
-
-  // Contadores dinámicos
-  const freeCount = tables.filter((t) => t.status === 'free').length;
-  const occupiedCount = tables.filter((t) => t.status === 'occupied').length;
-  const reservedCount = tables.filter((t) => t.status === 'reserved').length;
 
   const cartItemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -163,76 +122,54 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Stats cards ─────────────────────────────────── */}
-      <div className="px-5 grid grid-cols-3 gap-3 mb-6">
-        {[
-          { count: freeCount, label: 'Libres', color: 'text-accentGreen', border: 'border-emerald-900/30', bg: 'bg-emerald-950/30' },
-          { count: occupiedCount, label: 'Ocupadas', color: 'text-primary', border: 'border-orange-900/30', bg: 'bg-orange-950/30' },
-          { count: reservedCount, label: 'Reservadas', color: 'text-accentYellow', border: 'border-yellow-900/30', bg: 'bg-yellow-950/30' },
-        ].map(({ count, label, color, border, bg }) => (
-          <motion.div
-            key={label}
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`${bg} border ${border} p-4 rounded-2xl text-center`}
-          >
-            <p className={`text-3xl font-extrabold ${color}`}>{count}</p>
-            <p className={`text-[10px] font-bold uppercase tracking-wider mt-1 ${color} opacity-80`}>
-              {label}
-            </p>
-          </motion.div>
-        ))}
+      {/* ── Nuevo pedido ────────────────────────────────── */}
+      <div className="px-5 mb-6">
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setIsMenuOpen(true)}
+          className="w-full bg-primary hover:bg-primaryHover text-white font-extrabold py-6 rounded-3xl flex items-center justify-center gap-3 shadow-glow-orange transition-colors text-lg"
+        >
+          <PlusCircle size={24} />
+          Nuevo pedido
+        </motion.button>
       </div>
 
-      {/* ── Legend ──────────────────────────────────────── */}
-      <div className="px-5 flex gap-5 mb-4 text-xs font-medium text-gray-400 flex-wrap">
-        {Object.entries(STATUS_STYLES).map(([key, s]) => (
-          <div key={key} className="flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full ${s.dot}`} />
-            {s.label}
-          </div>
-        ))}
+      {/* ── Pedidos activos ─────────────────────────────── */}
+      <div className="px-5 mb-3 flex items-center gap-2">
+        <ClipboardList size={15} className="text-gray-500" />
+        <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Pedidos activos</h2>
+        {pedidosActivos.length > 0 && (
+          <span className="text-[10px] font-bold text-primary bg-primary/15 px-2 py-0.5 rounded-full">
+            {pedidosActivos.length}
+          </span>
+        )}
       </div>
 
-      {/* ── Tables grid ─────────────────────────────────── */}
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        className="px-5 grid grid-cols-3 gap-3"
-      >
-        {tables.map((table) => {
-          const style = STATUS_STYLES[table.status] ?? STATUS_STYLES.free;
-          return (
-            <motion.button
-              key={table.id}
-              variants={cardVariants}
-              whileTap={{ scale: table.status === 'maintenance' ? 1 : 0.93 }}
-              onClick={() => handleTableClick(table)}
-              disabled={table.status === 'maintenance'}
-              className={`relative p-4 rounded-2xl ${style.bg} border ${style.border} flex flex-col items-center justify-center h-32 transition-shadow ${
-                table.status === 'maintenance' ? 'opacity-60 cursor-not-allowed' : `hover:${style.shadow}`
-              }`}
-            >
-              {/* Status dot */}
-              <span className={`absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full ${style.dot}`} />
-
-              {/* Table number */}
-              <h2 className="text-3xl font-extrabold text-white mb-1 tracking-tight">{table.numeroMesa}</h2>
-
-              {/* Status */}
-              <p className={`text-[11px] font-bold mt-1 ${style.text}`}>
-                {style.label}
-              </p>
-            </motion.button>
-          );
-        })}
-      </motion.div>
-
-      {tables.length === 0 && (
-        <p className="px-5 text-center text-sm text-gray-600 mt-10">
-          Aún no hay mesas configuradas. Pídele al administrador que las cree desde el panel.
+      {pedidosActivos.length === 0 ? (
+        <p className="px-5 text-center text-sm text-gray-600 mt-4">
+          No hay pedidos activos por ahora.
         </p>
+      ) : (
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="px-5 grid grid-cols-1 gap-2.5"
+        >
+          {pedidosActivos.map((pedido) => (
+            <motion.div
+              key={pedido.id}
+              variants={cardVariants}
+              className="bg-card border border-gray-800/50 rounded-2xl p-3.5 flex justify-between items-center"
+            >
+              <div>
+                <p className="font-bold text-white text-sm">Pedido #{pedido.id}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{pedido.detalles.length} ítems · {pedido.estado}</p>
+              </div>
+              <p className="text-primary font-extrabold text-sm">S/ {pedido.total.toFixed(2)}</p>
+            </motion.div>
+          ))}
+        </motion.div>
       )}
 
       {/* ── Modals ──────────────────────────────────────── */}

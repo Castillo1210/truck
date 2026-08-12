@@ -1,5 +1,4 @@
 using CaraNegra.API.Reportes;
-using CaraNegra.Application.Pedidos.Queries;
 using CaraNegra.Application.Reportes.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -74,40 +73,6 @@ public class ReportesController : ControllerBase
 
         var bytes = ReportesExcelBuilder.ConstruirResumenVentas(resumen, productos);
         var nombreArchivo = $"reporte-ventas_{fechaDesde:yyyy-MM-dd}_a_{fechaHasta:yyyy-MM-dd}.xlsx";
-
-        return File(bytes, TipoContenidoXlsx, nombreArchivo);
-    }
-
-    /// <summary>
-    /// Pedidos hechos en una mesa dentro del rango de fechas indicado (rango opcional: si no
-    /// se indica, trae todo el historial de esa mesa). Pensado para el detalle "pedidos por
-    /// mesa" del panel de Reportes.
-    /// </summary>
-    [HttpGet("pedidos-por-mesa")]
-    public async Task<IActionResult> PedidosPorMesa(
-        [FromQuery] int mesaId,
-        [FromQuery] DateTime? fechaDesde = null,
-        [FromQuery] DateTime? fechaHasta = null)
-    {
-        var result = await _mediator.Send(new GetAllPedidosQuery(1, 500, null, mesaId, fechaDesde, fechaHasta));
-        return Ok(result);
-    }
-
-    /// <summary>
-    /// Exporta a Excel (.xlsx) el detalle línea por línea de los pedidos de una mesa en el
-    /// rango indicado.
-    /// </summary>
-    [HttpGet("pedidos-por-mesa/exportar")]
-    public async Task<IActionResult> ExportarPedidosPorMesa(
-        [FromQuery] int mesaId,
-        [FromQuery] DateTime? fechaDesde = null,
-        [FromQuery] DateTime? fechaHasta = null)
-    {
-        var result = await _mediator.Send(new GetAllPedidosQuery(1, 500, null, mesaId, fechaDesde, fechaHasta));
-        var mesaNumero = result.Items.FirstOrDefault()?.MesaNumero ?? mesaId.ToString();
-
-        var bytes = ReportesExcelBuilder.ConstruirPedidosPorMesa(result.Items, mesaNumero);
-        var nombreArchivo = $"pedidos-mesa-{mesaNumero}.xlsx";
 
         return File(bytes, TipoContenidoXlsx, nombreArchivo);
     }

@@ -10,7 +10,6 @@ import OrderSuccess from './pages/OrderSuccess';
 import Caja from './pages/Caja';
 import AdminHub from './pages/AdminHub';
 import AdminMenu from './pages/AdminMenu';
-import AdminMesas from './pages/AdminMesas';
 import AdminReportes from './pages/AdminReportes';
 import AdminUsuarios from './pages/AdminUsuarios';
 import AdminInventario from './pages/AdminInventario';
@@ -70,14 +69,6 @@ function App() {
               element={
                 <RequireAuth roles={['ADMIN']}>
                   <AdminMenu />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/admin/mesas"
-              element={
-                <RequireAuth roles={['ADMIN']}>
-                  <AdminMesas />
                 </RequireAuth>
               }
             />
@@ -151,4 +142,4 @@ function App() {
   );
 }
 
-export default App;
+export default App;

@@ -1,18 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, TrendingUp, Receipt, Ban, Wallet, Trophy, Download, Table2, Percent } from 'lucide-react';
+import { ChevronLeft, TrendingUp, Receipt, Ban, Wallet, Trophy, Download, Percent } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   getResumenVentas,
   getProductosMasVendidos,
   exportarResumenVentas,
-  exportarPedidosPorMesa,
 } from '../services/reportesService';
 import { getMetodoPagoIcon } from '../services/metodoPagoIcons';
-import { getMesasAdmin } from '../services/mesasAdminService';
-import { getPedidos } from '../services/ordersService';
-import { agruparDetallesPorProducto } from '../utils/agruparDetalles';
 
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const toInputValue = (d) => {
@@ -47,13 +43,6 @@ export default function AdminReportes() {
   const [isLoading, setIsLoading] = useState(true);
   const [exportandoResumen, setExportandoResumen] = useState(false);
 
-  // ── Pedidos por mesa ──────────────────────────────────
-  const [mesas, setMesas] = useState([]);
-  const [mesaSeleccionadaId, setMesaSeleccionadaId] = useState('');
-  const [pedidosMesa, setPedidosMesa] = useState([]);
-  const [isLoadingPedidosMesa, setIsLoadingPedidosMesa] = useState(false);
-  const [exportandoMesa, setExportandoMesa] = useState(false);
-
   const cargar = useCallback((desde, hasta) => {
     setIsLoading(true);
     Promise.all([getResumenVentas(desde, hasta), getProductosMasVendidos(desde, hasta, 10)])
@@ -71,30 +60,6 @@ export default function AdminReportes() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fechaDesde.getTime(), fechaHasta.getTime()]);
 
-  useEffect(() => {
-    getMesasAdmin()
-      .then(setMesas)
-      .catch(() => toast.error('No se pudieron cargar las mesas'));
-  }, []);
-
-  useEffect(() => {
-    if (!mesaSeleccionadaId) {
-      setPedidosMesa([]);
-      return;
-    }
-    setIsLoadingPedidosMesa(true);
-    getPedidos({
-      mesaId: mesaSeleccionadaId,
-      fechaDesde: toInputValue(fechaDesde),
-      fechaHasta: toInputValue(fechaHasta),
-      pageSize: 200,
-    })
-      .then((res) => setPedidosMesa(res.items))
-      .catch((err) => toast.error(err.message ?? 'No se pudieron cargar los pedidos de la mesa'))
-      .finally(() => setIsLoadingPedidosMesa(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mesaSeleccionadaId, fechaDesde.getTime(), fechaHasta.getTime()]);
-
   const handleExportarResumen = async () => {
     setExportandoResumen(true);
     try {
@@ -103,19 +68,6 @@ export default function AdminReportes() {
       toast.error(err.message ?? 'No se pudo exportar el reporte');
     } finally {
       setExportandoResumen(false);
-    }
-  };
-
-  const handleExportarPedidosMesa = async () => {
-    const mesa = mesas.find((m) => String(m.id) === String(mesaSeleccionadaId));
-    if (!mesa) return;
-    setExportandoMesa(true);
-    try {
-      await exportarPedidosPorMesa(mesa.id, mesa.numeroMesa, fechaDesde, fechaHasta);
-    } catch (err) {
-      toast.error(err.message ?? 'No se pudo exportar los pedidos de la mesa');
-    } finally {
-      setExportandoMesa(false);
     }
   };
 
@@ -285,74 +237,6 @@ export default function AdminReportes() {
           </div>
         </>
       )}
-
-      {/* ── Pedidos por mesa ─────────────────────────────── */}
-      <div className="px-5 mt-8">
-        <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-          <Table2 size={14} />
-          Pedidos por mesa
-        </h2>
-
-        <div className="flex gap-2 mb-3">
-          <select
-            value={mesaSeleccionadaId}
-            onChange={(e) => setMesaSeleccionadaId(e.target.value)}
-            className="flex-1 bg-card border border-gray-800/50 rounded-2xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-primary transition-colors"
-          >
-            <option value="">Selecciona una mesa…</option>
-            {mesas.map((m) => (
-              <option key={m.id} value={m.id}>Mesa {m.numeroMesa}</option>
-            ))}
-          </select>
-          <button
-            onClick={handleExportarPedidosMesa}
-            disabled={!mesaSeleccionadaId || exportandoMesa || pedidosMesa.length === 0}
-            className="px-4 rounded-2xl border border-dashed border-gray-700 text-gray-400 hover:text-white hover:border-primary/50 transition-colors disabled:opacity-40 flex items-center gap-1.5 text-xs font-semibold"
-            title="Exportar a Excel"
-          >
-            <Download size={14} />
-            Excel
-          </button>
-        </div>
-
-        {!mesaSeleccionadaId && (
-          <p className="text-sm text-gray-600">Elige una mesa para ver sus pedidos en el rango de fechas seleccionado arriba.</p>
-        )}
-
-        {mesaSeleccionadaId && isLoadingPedidosMesa && (
-          <p className="text-sm text-gray-600">Cargando pedidos…</p>
-        )}
-
-        {mesaSeleccionadaId && !isLoadingPedidosMesa && pedidosMesa.length === 0 && (
-          <p className="text-sm text-gray-600">Esta mesa no tiene pedidos en el rango de fechas seleccionado.</p>
-        )}
-
-        {mesaSeleccionadaId && !isLoadingPedidosMesa && pedidosMesa.length > 0 && (
-          <div className="space-y-2">
-            {pedidosMesa.map((pedido) => (
-              <div key={pedido.id} className="bg-card border border-gray-800/50 rounded-2xl p-3.5">
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-sm font-bold text-white">Pedido #{pedido.id}</span>
-                  <span className="text-xs text-gray-500">
-                    {new Date(pedido.creadoEn).toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' })}
-                  </span>
-                </div>
-                <div className="space-y-1 mb-2">
-                  {agruparDetallesPorProducto(pedido.detalles).map((d) => (
-                    <p key={d.id} className="text-xs text-gray-400">
-                      {d.cantidad}x {d.productoNombre}
-                    </p>
-                  ))}
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-gray-500">{pedido.estado}</span>
-                  <span className="font-bold text-primary">S/ {pedido.total.toFixed(2)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 }

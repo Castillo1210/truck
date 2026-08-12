@@ -74,8 +74,12 @@ public class CreatePagoCommandHandler : IRequestHandler<CreatePagoCommand, PagoD
             // más abajo), así que la consulta de "otros pedidos activos" debe excluir
             // explícitamente ESTE pedido — si no, se ve a sí mismo con su estado viejo
             // (todavía no Entregado) y nunca libera la mesa, ni siquiera cuando es el único
-            // pedido activo de esa mesa.
-            mesaLiberada = await LiberarMesaSiCorresponde(pedido.MesaId, pedido.PedidoId, cancellationToken);
+            // pedido activo de esa mesa. Si el pedido no tiene mesa asociada (food truck /
+            // mostrador), este paso simplemente no aplica.
+            if (pedido.MesaId.HasValue)
+            {
+                mesaLiberada = await LiberarMesaSiCorresponde(pedido.MesaId.Value, pedido.PedidoId, cancellationToken);
+            }
         }
         else if (pedido.EstadoPedido == EstadoPedido.Listo)
         {
@@ -101,11 +105,11 @@ public class CreatePagoCommandHandler : IRequestHandler<CreatePagoCommand, PagoD
             EstadoPedido = pedido.EstadoPedido.ToString()
         });
 
-        if (mesaLiberada)
+        if (mesaLiberada && pedido.MesaId.HasValue)
         {
             await _hub.NotificarMesaEstadoCambiado(new MesaEstadoCambiadoEvent
             {
-                MesaId = pedido.MesaId,
+                MesaId = pedido.MesaId.Value,
                 NumeroMesa = pagoCreado.Pedido?.Mesa?.NumeroMesa ?? string.Empty,
                 EstadoAnterior = EstadoMesa.Ocupada.ToString(),
                 EstadoNuevo = EstadoMesa.Disponible.ToString()
@@ -153,4 +157,4 @@ public class CreatePagoCommandHandler : IRequestHandler<CreatePagoCommand, PagoD
             CreadoEn = pago.CreadoEn
         };
     }
-}
+}

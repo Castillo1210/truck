@@ -98,26 +98,3 @@ export const exportarResumenVentas = async (fechaDesde, fechaHasta) => {
     throw new Error(getApiErrorMessage(error, 'No se pudo exportar el reporte'));
   }
 };
-
-/**
- * Descarga un .xlsx con el detalle línea por línea de los pedidos de una mesa.
- * @param {number} mesaId
- * @param {string|number} mesaNumero solo para nombrar el archivo
- * @param {Date} [fechaDesde]
- * @param {Date} [fechaHasta]
- */
-export const exportarPedidosPorMesa = async (mesaId, mesaNumero, fechaDesde, fechaHasta) => {
-  try {
-    const { data } = await api.get('/reportes/pedidos-por-mesa/exportar', {
-      params: {
-        mesaId,
-        fechaDesde: fechaDesde ? toDateParam(fechaDesde) : undefined,
-        fechaHasta: fechaHasta ? toDateParam(fechaHasta) : undefined,
-      },
-      responseType: 'blob',
-    });
-    descargarArchivo(data, `pedidos-mesa-${mesaNumero}.xlsx`);
-  } catch (error) {
-    throw new Error(getApiErrorMessage(error, 'No se pudo exportar los pedidos de la mesa'));
-  }
-};

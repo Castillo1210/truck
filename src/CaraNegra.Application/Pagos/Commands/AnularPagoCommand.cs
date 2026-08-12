@@ -67,12 +67,16 @@ public class AnularPagoCommandHandler : IRequestHandler<AnularPagoCommand, PagoD
             // Volver a estado Listo para cobro
             pedido.EstadoPedido = EstadoPedido.Listo;
 
-            // Ocupar mesa nuevamente
-            var mesa = await _context.Mesas.FindAsync(new object[] { mesaId }, cancellationToken);
-            if (mesa != null && mesa.Estado != EstadoMesa.Ocupada)
+            // Ocupar mesa nuevamente (solo si el pedido tiene mesa asociada; en el modelo de
+            // food truck / mostrador no aplica).
+            if (mesaId.HasValue)
             {
-                mesa.Estado = EstadoMesa.Ocupada;
-                mesaReocupada = true;
+                var mesa = await _context.Mesas.FindAsync(new object[] { mesaId.Value }, cancellationToken);
+                if (mesa != null && mesa.Estado != EstadoMesa.Ocupada)
+                {
+                    mesa.Estado = EstadoMesa.Ocupada;
+                    mesaReocupada = true;
+                }
             }
         }
         else if (totalPagado == 0)
@@ -106,11 +110,11 @@ public class AnularPagoCommandHandler : IRequestHandler<AnularPagoCommand, PagoD
             });
         }
 
-        if (mesaReocupada)
+        if (mesaReocupada && mesaId.HasValue)
         {
             await _hub.NotificarMesaEstadoCambiado(new MesaEstadoCambiadoEvent
             {
-                MesaId = mesaId,
+                MesaId = mesaId.Value,
                 NumeroMesa = pago.Pedido?.Mesa?.NumeroMesa ?? string.Empty,
                 EstadoAnterior = EstadoMesa.Disponible.ToString(),
                 EstadoNuevo = EstadoMesa.Ocupada.ToString()
@@ -138,4 +142,4 @@ public class AnularPagoCommandHandler : IRequestHandler<AnularPagoCommand, PagoD
             CreadoEn = pago.CreadoEn
         };
     }
-}
+}

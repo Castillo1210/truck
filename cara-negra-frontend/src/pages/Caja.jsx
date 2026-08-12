@@ -282,12 +282,16 @@ export default function Caja() {
             >
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="font-extrabold text-white text-lg">Mesa {pedido.mesaNumero}</p>
+                  <p className="font-extrabold text-white text-lg">Pedido #{pedido.id}</p>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${estiloEstado.bg} ${estiloEstado.border} ${estiloEstado.text}`}>
                     {estiloEstado.label}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5">Pedido #{pedido.id} · {pedido.detalles.length} ítems</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {pedido.usuarioNombre ? `${pedido.usuarioNombre} · ` : ''}
+                  {pedido.detalles.length} ítems
+                  {pedido.mesaNumero ? ` · Mesa ${pedido.mesaNumero}` : ''}
+                </p>
               </div>
               <div className="text-right">
                 <p className="text-primary font-extrabold text-lg">S/ {saldo.toFixed(2)}</p>
@@ -328,7 +332,7 @@ export default function Caja() {
                   <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wider">Cobrando</p>
                   <div className="flex items-center gap-2">
                     <h2 className="text-xl font-extrabold tracking-tight">
-                      Mesa {pedidoSeleccionado.mesaNumero ?? '—'}
+                      Pedido #{pedidoSeleccionado.id ?? '—'}
                     </h2>
                     {pedidoSeleccionado.estado && (
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
@@ -340,6 +344,13 @@ export default function Caja() {
                       </span>
                     )}
                   </div>
+                  {(pedidoSeleccionado.usuarioNombre || pedidoSeleccionado.mesaNumero) && (
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {pedidoSeleccionado.usuarioNombre}
+                      {pedidoSeleccionado.usuarioNombre && pedidoSeleccionado.mesaNumero ? ' · ' : ''}
+                      {pedidoSeleccionado.mesaNumero ? `Mesa ${pedidoSeleccionado.mesaNumero}` : ''}
+                    </p>
+                  )}
                 </div>
                 <motion.button
                   whileTap={{ scale: 0.9 }}

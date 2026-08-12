@@ -1,4 +1,3 @@
-using CaraNegra.Application.Pedidos.DTOs;
 using CaraNegra.Application.Reportes.DTOs;
 using ClosedXML.Excel;
 
@@ -91,58 +90,4 @@ public static class ReportesExcelBuilder
         return stream.ToArray();
     }
 
-    /// <summary>Detalle línea por línea de todos los pedidos de una mesa en el rango indicado.</summary>
-    public static byte[] ConstruirPedidosPorMesa(List<PedidoDto> pedidos, string mesaNumero)
-    {
-        using var libro = new XLWorkbook();
-        var hoja = libro.Worksheets.Add(NombreHojaValido($"Mesa {mesaNumero}"));
-
-        hoja.Cell(1, 1).Value = $"Cara Negra — Pedidos de la mesa {mesaNumero}";
-        hoja.Cell(1, 1).Style.Font.Bold = true;
-        hoja.Cell(1, 1).Style.Font.FontSize = 14;
-
-        var encabezados = new[] { "Pedido #", "Fecha", "Estado del pedido", "Producto", "Cantidad", "Precio unitario (S/)", "Total línea (S/)", "Notas" };
-        for (var c = 0; c < encabezados.Length; c++)
-        {
-            hoja.Cell(3, c + 1).Value = encabezados[c];
-        }
-        hoja.Row(3).Style.Font.Bold = true;
-
-        var fila = 4;
-        foreach (var pedido in pedidos.OrderBy(p => p.CreadoEn))
-        {
-            foreach (var d in pedido.Detalles)
-            {
-                hoja.Cell(fila, 1).Value = pedido.PedidoId;
-                hoja.Cell(fila, 2).Value = pedido.CreadoEn;
-                hoja.Cell(fila, 2).Style.DateFormat.Format = "dd/MM/yyyy HH:mm";
-                hoja.Cell(fila, 3).Value = pedido.EstadoPedido.ToString();
-                hoja.Cell(fila, 4).Value = d.ProductoNombre;
-                hoja.Cell(fila, 5).Value = d.Cantidad;
-                hoja.Cell(fila, 6).Value = d.Monto;
-                hoja.Cell(fila, 6).Style.NumberFormat.Format = "#,##0.00";
-                hoja.Cell(fila, 7).Value = d.Monto * d.Cantidad;
-                hoja.Cell(fila, 7).Style.NumberFormat.Format = "#,##0.00";
-                hoja.Cell(fila, 8).Value = d.Notas ?? string.Empty;
-                fila++;
-            }
-        }
-
-        hoja.Columns().AdjustToContents();
-
-        using var stream = new MemoryStream();
-        libro.SaveAs(stream);
-        return stream.ToArray();
-    }
-
-    // Excel no permite \ / ? * [ ] en el nombre de una hoja, ni más de 31 caracteres. El
-    // número/código de mesa lo escribe el usuario libremente (Fase 7: ahora es texto, no un
-    // int), así que hay que sanearlo antes de usarlo como nombre de hoja.
-    private static readonly char[] CaracteresInvalidosHoja = { '\\', '/', '?', '*', '[', ']', ':' };
-
-    private static string NombreHojaValido(string nombreDeseado)
-    {
-        var limpio = new string(nombreDeseado.Select(c => CaracteresInvalidosHoja.Contains(c) ? '-' : c).ToArray());
-        return limpio.Length <= 31 ? limpio : limpio[..31];
-    }
 }

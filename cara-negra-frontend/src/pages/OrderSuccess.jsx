@@ -14,7 +14,6 @@ export default function OrderSuccess() {
   const timerRef = useRef(null);
 
   const pedidoId = state?.pedidoId ?? '—';
-  const mesaNumero = state?.mesaNumero;
 
   // Auto-redirigir al dashboard después de 10 s (se cancela si se abre la
   // previsualización de la comanda, para no interrumpir una demo al cliente).
@@ -83,9 +82,7 @@ export default function OrderSuccess() {
             ¡Pedido enviado!
           </h1>
           <p className="text-gray-500 text-sm leading-relaxed">
-            {mesaNumero
-              ? `La comanda de la Mesa ${mesaNumero} ha sido enviada a cocina.`
-              : 'La comanda ha sido enviada a cocina correctamente.'}
+            La comanda ha sido enviada a cocina correctamente.
           </p>
         </motion.div>
 
@@ -107,11 +104,9 @@ export default function OrderSuccess() {
           >
             #{pedidoId}
           </motion.p>
-          {mesaNumero && (
-            <p className="text-sm text-gray-400">
-              Mesa {mesaNumero} · En preparación
-            </p>
-          )}
+          <p className="text-sm text-gray-400">
+            En preparación
+          </p>
         </motion.div>
 
         {/* Reimprimir comanda */}
@@ -152,7 +147,7 @@ export default function OrderSuccess() {
           className="w-full bg-card border border-gray-700/40 hover:bg-cardHighlight text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-colors"
         >
           <ArrowLeft size={18} />
-          Volver al mapa de mesas
+          Volver al inicio
         </motion.button>
 
         <motion.p
