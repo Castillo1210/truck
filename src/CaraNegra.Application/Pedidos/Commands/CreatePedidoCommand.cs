@@ -82,6 +82,7 @@ public class CreatePedidoCommandHandler : IRequestHandler<CreatePedidoCommand, P
         var pedido = new Pedido
         {
             MesaId = mesa?.MesaId,
+            NombreCliente = string.IsNullOrWhiteSpace(request.Dto.NombreCliente) ? null : request.Dto.NombreCliente.Trim(),
             UsuarioId = usuario.UsuarioId,
             SubTotal = subTotal,
             Total = total,
@@ -110,6 +111,7 @@ public class CreatePedidoCommandHandler : IRequestHandler<CreatePedidoCommand, P
         {
             PedidoId = pedidoCreado.PedidoId,
             MesaNumero = pedidoCreado.Mesa?.NumeroMesa ?? string.Empty,
+            NombreCliente = pedidoCreado.NombreCliente,
             MozoNombre = pedidoCreado.Usuario?.NombreCompleto ?? string.Empty,
             CreadoEn = pedidoCreado.CreadoEn,
             Detalles = pedidoCreado.DetallesPedidos.Select(d => new PedidoDetalleEvent
@@ -126,6 +128,7 @@ public class CreatePedidoCommandHandler : IRequestHandler<CreatePedidoCommand, P
         {
             PedidoId = pedidoCreado.PedidoId,
             MesaNumero = pedidoCreado.Mesa?.NumeroMesa ?? string.Empty,
+            NombreCliente = pedidoCreado.NombreCliente ?? string.Empty,
             MozoNombre = pedidoCreado.Usuario?.NombreCompleto ?? string.Empty,
             CreadoEn = pedidoCreado.CreadoEn,
             EsAdicional = false,
@@ -147,6 +150,7 @@ public class CreatePedidoCommandHandler : IRequestHandler<CreatePedidoCommand, P
             PedidoId = pedido.PedidoId,
             MesaId = pedido.MesaId,
             MesaNumero = pedido.Mesa?.NumeroMesa ?? string.Empty,
+            NombreCliente = pedido.NombreCliente,
             UsuarioId = pedido.UsuarioId,
             UsuarioNombre = pedido.Usuario?.NombreCompleto ?? string.Empty,
             SubTotal = pedido.SubTotal,

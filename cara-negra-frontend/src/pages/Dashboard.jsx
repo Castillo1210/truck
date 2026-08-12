@@ -163,8 +163,12 @@ export default function Dashboard() {
               className="bg-card border border-gray-800/50 rounded-2xl p-3.5 flex justify-between items-center"
             >
               <div>
-                <p className="font-bold text-white text-sm">Pedido #{pedido.id}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{pedido.detalles.length} ítems · {pedido.estado}</p>
+                <p className="font-bold text-white text-sm">
+                  {pedido.nombreCliente || `Pedido #${pedido.id}`}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  #{pedido.id} · {pedido.detalles.length} ítems · {pedido.estado}
+                </p>
               </div>
               <p className="text-primary font-extrabold text-sm">S/ {pedido.total.toFixed(2)}</p>
             </motion.div>

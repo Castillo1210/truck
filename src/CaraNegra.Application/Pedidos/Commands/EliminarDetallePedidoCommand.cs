@@ -91,6 +91,7 @@ public class EliminarDetallePedidoCommandHandler : IRequestHandler<EliminarDetal
             PedidoId = pedido.PedidoId,
             MesaId = pedido.MesaId,
             MesaNumero = pedido.Mesa?.NumeroMesa ?? string.Empty,
+            NombreCliente = pedido.NombreCliente,
             UsuarioId = pedido.UsuarioId,
             UsuarioNombre = pedido.Usuario?.NombreCompleto ?? string.Empty,
             SubTotal = pedido.SubTotal,

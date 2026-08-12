@@ -104,6 +104,7 @@ public class AgregarDetallePedidoCommandHandler : IRequestHandler<AgregarDetalle
         {
             PedidoId = pedidoActualizado.PedidoId,
             MesaNumero = pedidoActualizado.Mesa?.NumeroMesa ?? string.Empty,
+            NombreCliente = pedidoActualizado.NombreCliente ?? string.Empty,
             MozoNombre = pedidoActualizado.Usuario?.NombreCompleto ?? string.Empty,
             CreadoEn = detalle.CreadoEn,
             EsAdicional = true,
@@ -142,6 +143,7 @@ public class AgregarDetallePedidoCommandHandler : IRequestHandler<AgregarDetalle
             PedidoId = pedido.PedidoId,
             MesaId = pedido.MesaId,
             MesaNumero = pedido.Mesa?.NumeroMesa ?? string.Empty,
+            NombreCliente = pedido.NombreCliente,
             UsuarioId = pedido.UsuarioId,
             UsuarioNombre = pedido.Usuario?.NombreCompleto ?? string.Empty,
             SubTotal = pedido.SubTotal,

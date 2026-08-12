@@ -5,7 +5,7 @@ import { useCart } from '../CartContext';
 import { createPedido } from '../services/ordersService';
 import { getCremas } from '../services/cremasService';
 import { useAuth } from '../context/AuthContext';
-import { ChevronLeft, Trash2, Plus, Minus, FileText, Send, ShoppingBag, UtensilsCrossed, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronLeft, Trash2, Plus, Minus, FileText, Send, ShoppingBag, UtensilsCrossed, ChevronDown, ChevronUp, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function CartPage() {
@@ -17,6 +17,9 @@ export default function CartPage() {
   // de una única nota general adjuntada al primer ítem como compromiso. Se indexa por el id
   // del producto (item.id), que es único dentro del carrito.
   const [itemExtras, setItemExtras] = useState({});
+  // Venta por pedido (no por mesa): el nombre del cliente reemplaza a la mesa como forma de
+  // ubicar/llamar el pedido (mostrador, pantalla de pedidos activos, comanda y boleta).
+  const [nombreCliente, setNombreCliente] = useState('');
   const [isSending, setIsSending] = useState(false);
 
   // Cremas/toppings del catálogo administrable (Fase 8): chips de un solo tap para no
@@ -77,21 +80,27 @@ export default function CartPage() {
       toast.error('No se pudo identificar al usuario. Vuelve a iniciar sesión.');
       return;
     }
+    if (!nombreCliente.trim()) {
+      toast.error('Ingresa el nombre del cliente para identificar el pedido');
+      return;
+    }
 
     setIsSending(true);
     try {
       const detalles = buildDetalles();
-      // Venta por pedido (no por mesa): cada envío crea un pedido nuevo, identificado
-      // solo por su propio número, sin asociarlo a ninguna mesa.
+      // Venta por pedido (no por mesa): cada envío crea un pedido nuevo, identificado por su
+      // propio número y por el nombre del cliente, sin asociarlo a ninguna mesa.
       const pedido = await createPedido({
+        nombreCliente: nombreCliente.trim(),
         usuarioId: user.usuarioId,
         detalles,
       });
 
       clearCart();
       setItemExtras({});
+      setNombreCliente('');
       navigate('/success', {
-        state: { pedidoId: pedido.id },
+        state: { pedidoId: pedido.id, nombreCliente: pedido.nombreCliente },
       });
     } catch (err) {
       toast.error(err.message ?? 'Error al enviar el pedido. Intenta de nuevo.');
@@ -285,6 +294,23 @@ export default function CartPage() {
 
       {/* ── Footer ──────────────────────────────────────── */}
       <div className="px-4 pb-8 pt-3 border-t border-gray-800/60 bg-card/80 backdrop-blur-md space-y-4">
+        {/* Nombre del cliente: reemplaza a la mesa para ubicar/llamar el pedido */}
+        <div>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+            Nombre del cliente
+          </p>
+          <div className="flex items-center gap-3 bg-background p-3.5 rounded-2xl border border-gray-700/30">
+            <User size={17} className="text-gray-500 flex-shrink-0" />
+            <input
+              type="text"
+              value={nombreCliente}
+              onChange={(e) => setNombreCliente(e.target.value)}
+              placeholder="Ej: Juan, Ana…"
+              className="bg-transparent w-full text-sm focus:outline-none placeholder-gray-600 text-white"
+            />
+          </div>
+        </div>
+
         {/* Total */}
         <div className="flex justify-between items-center">
           <span className="text-gray-400 text-base">Total estimado</span>

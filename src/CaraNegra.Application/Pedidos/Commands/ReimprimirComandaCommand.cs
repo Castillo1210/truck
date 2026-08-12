@@ -36,6 +36,7 @@ public class ReimprimirComandaCommandHandler : IRequestHandler<ReimprimirComanda
         {
             PedidoId = pedido.PedidoId,
             MesaNumero = pedido.Mesa?.NumeroMesa ?? string.Empty,
+            NombreCliente = pedido.NombreCliente ?? string.Empty,
             MozoNombre = pedido.Usuario?.NombreCompleto ?? string.Empty,
             CreadoEn = pedido.CreadoEn,
             EsAdicional = false,

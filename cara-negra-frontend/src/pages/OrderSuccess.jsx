@@ -14,6 +14,7 @@ export default function OrderSuccess() {
   const timerRef = useRef(null);
 
   const pedidoId = state?.pedidoId ?? '—';
+  const nombreCliente = state?.nombreCliente;
 
   // Auto-redirigir al dashboard después de 10 s (se cancela si se abre la
   // previsualización de la comanda, para no interrumpir una demo al cliente).
@@ -105,7 +106,7 @@ export default function OrderSuccess() {
             #{pedidoId}
           </motion.p>
           <p className="text-sm text-gray-400">
-            En preparación
+            {nombreCliente ? `${nombreCliente} · En preparación` : 'En preparación'}
           </p>
         </motion.div>
 

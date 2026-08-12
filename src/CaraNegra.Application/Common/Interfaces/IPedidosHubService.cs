@@ -14,6 +14,9 @@ public record NuevoPedidoEvent
 {
     public int PedidoId { get; init; }
     public string MesaNumero { get; init; } = string.Empty;
+    // Venta por pedido (no por mesa): para que el dashboard en tiempo real pueda mostrar de
+    // quién es cada pedido activo sin depender de una mesa.
+    public string? NombreCliente { get; init; }
     public string MozoNombre { get; init; } = string.Empty;
     public DateTime CreadoEn { get; init; }
     public List<PedidoDetalleEvent> Detalles { get; init; } = new();
@@ -73,4 +76,4 @@ public record PedidoActualizadoEvent
     public string MesaNumero { get; init; } = string.Empty;
     public decimal SubTotal { get; init; }
     public decimal Total { get; init; }
-}
+}

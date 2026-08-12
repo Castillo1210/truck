@@ -54,7 +54,11 @@ export default function ReciboPedido({ pedido, pagos, onClose }) {
             <span>Pedido #{pedido.id}</span>
             <span>{fecha}</span>
           </div>
-          {/* Venta por pedido (no por mesa): se identifica quién atendió en vez de una mesa. */}
+          {/* Venta por pedido (no por mesa): el nombre del cliente es el dato principal para
+              ubicar el pedido; el mozo que atendió y la mesa (si la hay) son datos secundarios. */}
+          {pedido.nombreCliente && (
+            <div className="text-sm font-bold text-gray-800 mb-1.5">Cliente: {pedido.nombreCliente}</div>
+          )}
           {pedido.usuarioNombre && (
             <div className="text-xs text-gray-600 mb-1">Atendido por: {pedido.usuarioNombre}</div>
           )}

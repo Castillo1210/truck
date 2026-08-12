@@ -37,6 +37,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<Pago>().Property(p => p.Monto).HasColumnType("decimal(10,2)");
         modelBuilder.Entity<Descuento>().Property(d => d.Valor).HasColumnType("decimal(10,2)");
 
+        // Venta por pedido (no por mesa): nombre del cliente para ubicar el pedido.
+        modelBuilder.Entity<Pedido>().Property(p => p.NombreCliente).HasMaxLength(100);
+
         // Auditoría de anulación de pagos
         modelBuilder.Entity<Pago>().Property(p => p.Referencia).HasMaxLength(100);
         modelBuilder.Entity<Pago>().Property(p => p.MotivoAnulacion).HasMaxLength(250);
@@ -76,4 +79,4 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         }
         return base.SaveChangesAsync(cancellationToken);
     }
-}
+}

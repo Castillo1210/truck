@@ -43,6 +43,7 @@ const mapPedido = (p) => ({
   id: p.pedidoId,
   mesaId: p.mesaId,
   mesaNumero: p.mesaNumero,
+  nombreCliente: p.nombreCliente ?? '',
   usuarioId: p.usuarioId,
   usuarioNombre: p.usuarioNombre,
   subTotal: p.subTotal,
@@ -56,14 +57,16 @@ const mapPedido = (p) => ({
 
 /**
  * Crea un nuevo pedido (toma de orden). Venta por pedido (no por mesa): mesaId es
- * opcional y normalmente se omite (modelo food truck / mostrador, sin mesas físicas).
- * @param {{ mesaId?: number, usuarioId: number, detalles: Array<{productoId:number, cantidad:number, notas?:string}> }} payload
+ * opcional y normalmente se omite (modelo food truck / mostrador, sin mesas físicas);
+ * en su lugar, nombreCliente identifica el pedido para poder ubicarlo/llamarlo.
+ * @param {{ mesaId?: number, nombreCliente?: string, usuarioId: number, detalles: Array<{productoId:number, cantidad:number, notas?:string}> }} payload
  * @returns {Promise<Object>} pedido creado
  */
-export const createPedido = async ({ mesaId, usuarioId, detalles }) => {
+export const createPedido = async ({ mesaId, nombreCliente, usuarioId, detalles }) => {
   try {
     const { data } = await api.post('/pedidos', {
       mesaId: mesaId ?? null,
+      nombreCliente: nombreCliente || null,
       usuarioId,
       detalles: detalles.map((d) => ({
         productoId: d.productoId,

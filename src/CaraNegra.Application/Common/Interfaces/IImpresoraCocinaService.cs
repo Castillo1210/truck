@@ -31,6 +31,10 @@ public record ComandaCocina
 {
     public int PedidoId { get; init; }
     public string MesaNumero { get; init; } = string.Empty;
+    // Venta por pedido (no por mesa): nombre que dio el cliente al hacer el pedido, para que
+    // cocina/mostrador puedan llamarlo cuando esté listo (reemplaza a la mesa como forma de
+    // ubicar el pedido en el modelo de food truck / mostrador).
+    public string NombreCliente { get; init; } = string.Empty;
     public string MozoNombre { get; init; } = string.Empty;
     public DateTime CreadoEn { get; init; }
 

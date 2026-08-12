@@ -10,6 +10,11 @@ public class Pedido : BaseEntity
     public decimal Total { get; set; }
     public EstadoPedido EstadoPedido { get; set; } = EstadoPedido.Pendiente;
 
+    // Venta por pedido (no por mesa): nombre que da el cliente al hacer el pedido, para
+    // ubicarlo rápidamente (en el mostrador, en la comanda y en la boleta) sin depender de
+    // una mesa asignada.
+    public string? NombreCliente { get; set; }
+
     // Claves foraneas
     // Venta por pedido (no por mesa): en el modelo de food truck / mostrador no existen
     // mesas físicas, así que un pedido puede no tener mesa asociada. Se conserva la

@@ -80,6 +80,12 @@ public class ImpresoraCocinaService : IImpresoraCocinaService
         // todos modos llega un MesaNumero (compatibilidad hacia atrás), se agrega como dato
         // extra, pero ya no es obligatorio ni el eje del ticket.
         AgregarLinea(sb, $"Pedido #{comanda.PedidoId}");
+        if (!string.IsNullOrWhiteSpace(comanda.NombreCliente))
+        {
+            // Nombre que dio el cliente al pedir: es lo que se usa para llamarlo cuando el
+            // pedido está listo (reemplaza a la mesa como forma de ubicar el pedido).
+            AgregarLinea(sb, $"Cliente: {comanda.NombreCliente}");
+        }
         if (!string.IsNullOrWhiteSpace(comanda.MesaNumero))
         {
             AgregarLinea(sb, $"Mesa: {comanda.MesaNumero}");

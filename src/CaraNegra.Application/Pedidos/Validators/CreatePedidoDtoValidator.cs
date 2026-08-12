@@ -22,6 +22,17 @@ public class CreatePedidoDtoValidator : AbstractValidator<CreatePedidoDto>
             .Must(BeValidMesa).WithMessage("La mesa no existe o no está disponible")
             .When(x => x.MesaId.HasValue);
 
+        // Sin mesa asignada, el nombre del cliente es la forma de ubicar el pedido (llamarlo
+        // cuando esté listo, encontrarlo en la lista de pedidos activos, etc.), así que es
+        // requerido en ese caso. Si el pedido sí tiene mesa, es opcional.
+        RuleFor(x => x.NombreCliente)
+            .NotEmpty().WithMessage("El nombre del cliente es requerido para identificar el pedido")
+            .When(x => !x.MesaId.HasValue);
+
+        RuleFor(x => x.NombreCliente)
+            .MaximumLength(100).WithMessage("El nombre del cliente es muy largo")
+            .When(x => !string.IsNullOrWhiteSpace(x.NombreCliente));
+
         RuleFor(x => x.UsuarioId)
             .GreaterThan(0).WithMessage("El usuario es requerido")
             .Must(BeValidUsuario).WithMessage("El usuario no existe");

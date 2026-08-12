@@ -8,6 +8,8 @@ public class PedidoDto
     public int PedidoId { get; set; }
     public int? MesaId { get; set; }
     public string MesaNumero { get; set; } = string.Empty;
+    // Venta por pedido (no por mesa): nombre que dio el cliente al pedir, para ubicarlo.
+    public string? NombreCliente { get; set; }
     public int UsuarioId { get; set; }
     public string UsuarioNombre { get; set; } = string.Empty;
     public decimal SubTotal { get; set; }
@@ -35,6 +37,9 @@ public class CreatePedidoDto
     // identifica solo por su propio número. Se mantiene el campo por si algún local sí usa
     // mesas y lo envía.
     public int? MesaId { get; set; }
+    // Nombre que da el cliente al hacer el pedido (reemplaza a la mesa para ubicarlo
+    // rápidamente). Requerido cuando no se envía MesaId — ver CreatePedidoDtoValidator.
+    public string? NombreCliente { get; set; }
     public int UsuarioId { get; set; }
     public List<CreatePedidoDetalleDto> Detalles { get; set; } = new();
 }
