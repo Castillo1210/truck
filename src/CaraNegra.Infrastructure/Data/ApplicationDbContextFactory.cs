@@ -13,7 +13,7 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
         // (o el equivalente 'export' en Linux/macOS). También se acepta ConnectionStrings__DefaultConnection
         // por si ya está configurada para la aplicación en ejecución.
         var connectionString =
-            Environment.GetEnvironmentVariable("CARANEGRA_DB_CONNECTION")
+            Environment.GetEnvironmentVariable("TRUCKMAU_DB_CONNECTION")
             ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
             ?? throw new InvalidOperationException(
                 "No se encontró una cadena de conexión para las migraciones de EF Core. " +

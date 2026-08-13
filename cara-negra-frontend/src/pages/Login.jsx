@@ -46,7 +46,7 @@ export default function Login() {
         <div className="w-20 h-20 bg-primary rounded-3xl flex items-center justify-center mb-4 shadow-glow-orange">
           <Utensils className="text-white w-10 h-10" />
         </div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">Cara Negra</h1>
+        <h1 className="text-3xl font-bold text-white tracking-tight">El Truck de Mau</h1>
         <p className="text-gray-500 text-sm mt-1">Sistema de gestión de sala</p>
       </motion.div>
 

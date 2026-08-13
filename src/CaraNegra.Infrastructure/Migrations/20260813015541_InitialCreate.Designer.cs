@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CaraNegra.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260726015735_InitialCreate")]
+    [Migration("20260813015541_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -405,8 +405,12 @@ namespace CaraNegra.Infrastructure.Migrations
                     b.Property<int>("EstadoPedido")
                         .HasColumnType("int");
 
-                    b.Property<int>("MesaId")
+                    b.Property<int?>("MesaId")
                         .HasColumnType("int");
+
+                    b.Property<string>("NombreCliente")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<decimal>("SubTotal")
                         .HasColumnType("decimal(10,2)");
@@ -631,8 +635,7 @@ namespace CaraNegra.Infrastructure.Migrations
                     b.HasOne("CaraNegra.Domain.Entities.Mesa", "Mesa")
                         .WithMany("Pedidos")
                         .HasForeignKey("MesaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("CaraNegra.Domain.Entities.Usuario", "Usuario")
                         .WithMany("Pedidos")

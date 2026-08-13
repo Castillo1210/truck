@@ -269,7 +269,9 @@ namespace CaraNegra.Infrastructure.Migrations
                     SubTotal = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
                     Total = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
                     EstadoPedido = table.Column<int>(type: "int", nullable: false),
-                    MesaId = table.Column<int>(type: "int", nullable: false),
+                    NombreCliente = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    MesaId = table.Column<int>(type: "int", nullable: true),
                     UsuarioId = table.Column<int>(type: "int", nullable: false),
                     CreadoEn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     ActualizadoEn = table.Column<DateTime>(type: "datetime(6)", nullable: true)

@@ -402,8 +402,12 @@ namespace CaraNegra.Infrastructure.Migrations
                     b.Property<int>("EstadoPedido")
                         .HasColumnType("int");
 
-                    b.Property<int>("MesaId")
+                    b.Property<int?>("MesaId")
                         .HasColumnType("int");
+
+                    b.Property<string>("NombreCliente")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<decimal>("SubTotal")
                         .HasColumnType("decimal(10,2)");
@@ -628,8 +632,7 @@ namespace CaraNegra.Infrastructure.Migrations
                     b.HasOne("CaraNegra.Domain.Entities.Mesa", "Mesa")
                         .WithMany("Pedidos")
                         .HasForeignKey("MesaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("CaraNegra.Domain.Entities.Usuario", "Usuario")
                         .WithMany("Pedidos")

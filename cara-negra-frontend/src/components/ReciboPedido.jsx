@@ -45,7 +45,7 @@ export default function ReciboPedido({ pedido, pagos, onClose }) {
         {/* Ticket */}
         <div className="px-6 py-5 font-mono text-sm">
           <div className="text-center mb-4">
-            <p className="font-extrabold text-base tracking-wide">CARA NEGRA</p>
+            <p className="font-extrabold text-base tracking-wide">El Truck de Mau</p>
             <p className="text-xs text-gray-500">Comprobante interno de cobro</p>
             <p className="text-xs text-gray-500">(no válido como comprobante SUNAT)</p>
           </div>

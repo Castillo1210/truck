@@ -10,8 +10,8 @@ restaurar paquetes NuGet.
 Desde la carpeta `src/CaraNegra.API`, ejecuta:
 
 ```bash
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Port=3306;Database=cara_negra;User=root;Password=Mina@200717;"
-dotnet user-secrets set "JwtSettings:Secret" "K7mP9xR2dL8vN4qT6cY1hJ5wB3sF0gZe"
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Port=3306;Database=truck-mau;User=root;Password=Mina@200717;"
+dotnet user-secrets set "JwtSettings:Secret" "KdLmQpRtVxNzBaCeHsJuWyFiGoTkPrMv"
 ```
 
 Esto guarda los valores fuera del repositorio (en tu perfil de usuario), así que nunca se
@@ -29,7 +29,7 @@ conexión de una variable de entorno en vez de tenerla escrita en el código:
 
 **Windows (PowerShell):**
 ```powershell
-setx CARANEGRA_DB_CONNECTION "Server=localhost;Port=3306;Database=cara_negra;User=root;Password=Mina@200717;"
+setx TRUCKMAU_DB_CONNECTION "Server=localhost;Port=3306;Database=truck-mau;User=root;Password=Mina@200717;"
 ```
 (Cierra y vuelve a abrir la terminal/Visual Studio después de `setx` para que tome efecto.)
 
