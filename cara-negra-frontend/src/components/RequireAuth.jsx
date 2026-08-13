@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
  * está permitido, se le manda de vuelta al mapa de mesas en lugar de /login
  * (ya tiene sesión válida, solo no tiene permiso para esa sección).
  */
-export default function RequireAuth({ children, roles }) {
+export default function RequireAuth({ children, roles = [] }) {
   const { user } = useAuth();
   const location = useLocation();
 
@@ -18,7 +18,7 @@ export default function RequireAuth({ children, roles }) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  if (roles && roles.length > 0 && !roles.includes(user.rol)) {
+  if (roles.length > 0 && !roles.includes(user.rol)) {
     return <Navigate to="/dashboard" replace />;
   }
 
