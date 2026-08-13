@@ -10,6 +10,12 @@ import { useAuth } from '../context/AuthContext';
  * está permitido, se le manda de vuelta al mapa de mesas en lugar de /login
  * (ya tiene sesión válida, solo no tiene permiso para esa sección).
  */
+/**
+ * @param {{
+ *   children: import('react').ReactNode,
+ *   roles?: string[]
+ * }} props
+ */
 export default function RequireAuth({ children, roles = [] }) {
   const { user } = useAuth();
   const location = useLocation();
